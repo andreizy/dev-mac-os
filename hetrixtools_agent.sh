@@ -2,7 +2,7 @@
 #
 #
 #	HetrixTools Server Monitoring Agent - macOS
-#	Copyright 2015 - 2025 @  HetrixTools
+#	Copyright 2015 - 2026 @  HetrixTools
 #	For support, please open a ticket on our website https://hetrixtools.com
 #
 #
@@ -58,7 +58,7 @@ kv_get() { # usage: kv_get namespace key [default]
 	fi
 }
 
-# Service status function (macOS compatible)
+# Service status function
 servicestatus() {
 	if (( $(ps -ef | grep -E "[\/\ ]$1([^\/]|$)" | grep -v "grep" | wc -l) > 0 ))
 	then
@@ -311,8 +311,7 @@ X=0
 for i in $(seq "$RunTimes"); do
 	X=$((X + 1))
 
-	# CPU usage via top (macOS)
-	# Output format: "CPU usage: X.XX% user, Y.YY% sys, Z.ZZ% idle"
+	# CPU usage via top
 	TOP_OUTPUT=$(top -l 2 -n 0 -s "$CollectEveryXSeconds" 2>/dev/null | grep "CPU usage" | tail -1)
 	CPU_USER=$(echo "$TOP_OUTPUT" | awk -F'[:,]' '{print $2}' | grep -oE '[0-9]+\.[0-9]+')
 	CPU_SYS=$(echo "$TOP_OUTPUT" | awk -F'[:,]' '{print $3}' | grep -oE '[0-9]+\.[0-9]+')
@@ -514,11 +513,8 @@ RAMCache=0
 if [ "$DEBUG" -eq 1 ]; then echo -e "$ScriptStartTime-$(date +%T]) RAM Size: $RAMSize Usage: $RAM Swap Size: $RAMSwapSize Swap: $RAMSwap" >> "$ScriptPath"/debug.log; fi
 
 # Disks usage
-# macOS: df -b gives 512-byte blocks; mount point starts at field 6
-# Linux: df -T -b gives bytes with filesystem type; mount point starts at field 9
 DISKs=""
 if [ -n "$(df -T -b 2>/dev/null)" ]; then
-	# Linux path: df -T -b (has fs type column, sizes in bytes)
 	while IFS= read -r line; do
 		mount_point=$(echo "$line" | awk '{for(i=9;i<=NF;i++) printf "%s"(i<NF?" ":""), $i; print ""}')
 		fs_type=$(echo "$line" | awk '{print $2}')
@@ -530,7 +526,6 @@ if [ -n "$(df -T -b 2>/dev/null)" ]; then
 		fi
 	done <<< "$(df -T -b 2>/dev/null | sed 1d | grep -v -E 'devfs|tmpfs|map |/System/Volumes/')"
 else
-	# macOS path: df -b (no fs type column, sizes in 512-byte blocks)
 	while IFS= read -r line; do
 		mount_point=$(echo "$line" | awk '{for(i=6;i<=NF;i++) printf "%s"(i<NF?" ":""), $i; print ""}')
 		total_size=$(echo "$line" | awk '{print $2 * 512}')
@@ -561,7 +556,7 @@ while IFS= read -r line; do
 done <<< "$(df -i 2>/dev/null | sed 1d | grep -v -E 'devfs|tmpfs|map |/System/Volumes/')"
 INODEs=$(echo -ne "$INODEs" | base64 | tr -d '\n\r\t ')
 
-# Disk IOPS (final snapshot and calculation — per physical disk)
+# Disk IOPS
 IOPS=""
 IOPS_TIME_END=$(date +%s)
 IOPS_TIME_DIFF=$((IOPS_TIME_END - IOPS_TIME_START))
@@ -727,7 +722,7 @@ if [ "$DEBUG" -eq 1 ]; then
 	echo -e "$ScriptStartTime-$(date +%T]) JSON:\n$json" >> "$ScriptPath"/debug.log
 fi
 
-# Post data using curl (macOS ships with curl)
+# Post data using curl
 jsoncomp=$(echo -ne "$json" | gzip -c | base64 | tr -d '\n\r\t ' | sed 's/\//%2F/g' | sed 's/+/%2B/g')
 
 if [ "$DEBUG" -eq 1 ]; then
