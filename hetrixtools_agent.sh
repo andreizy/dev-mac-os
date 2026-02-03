@@ -733,5 +733,3 @@ else
 	curl -s --retry 3 --retry-delay 1 --max-time 15 -X POST -d "j=$jsoncomp" $CurlSecure https://sm.hetrixtools.net/v2/ &> /dev/null
 fi
 
-# Also output JSON for inspection
-echo "$json" | python3 -m json.tool 2>/dev/null || echo "$json"
